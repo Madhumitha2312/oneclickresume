@@ -1,34 +1,83 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useResume } from "@/context/ResumeContext";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, ArrowRight, Plus, Trash2, Eye } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Trash2, Eye, Sparkles, Loader2, Save } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
-const steps = ["Contact", "Summary", "Education", "Skills", "Projects", "Experience"];
+const steps = ["Contact", "Summary", "Education", "Skills", "Projects", "Experience", "Certifications"];
 
 const ResumeBuilder = () => {
   const { resume, updateField } = useResume();
+  const { user } = useAuth();
   const [step, setStep] = useState(0);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const resumeId = searchParams.get("id");
+  const { toast } = useToast();
 
   const next = () => step < steps.length - 1 && setStep(step + 1);
   const prev = () => step > 0 && setStep(step - 1);
+
+  const saveResume = async () => {
+    if (!user || !resumeId) return;
+    setSaving(true);
+    await supabase
+      .from("resumes")
+      .update({ resume_data: resume as any, title: resume.name || "Untitled Resume" })
+      .eq("id", resumeId);
+    setSaving(false);
+    toast({ title: "Resume saved!" });
+  };
+
+  const aiGenerate = async (action: string) => {
+    setAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-resume", {
+        body: { action, data: resume },
+      });
+      if (error) throw error;
+      if (data?.result) {
+        if (action === "summary") {
+          updateField("summary", data.result);
+        } else if (action === "skills") {
+          const newSkills = data.result.split(",").map((s: string) => s.trim()).filter(Boolean);
+          updateField("skills", [...new Set([...resume.skills, ...newSkills])]);
+        }
+        toast({ title: "AI suggestion applied!" });
+      }
+    } catch (e: any) {
+      toast({ title: "AI error", description: e.message || "Failed to generate", variant: "destructive" });
+    }
+    setAiLoading(false);
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
-            <ArrowLeft className="mr-2 h-4 w-4" /> Home
+          <Button variant="ghost" size="sm" onClick={() => user ? navigate("/dashboard") : navigate("/")}>
+            <ArrowLeft className="mr-2 h-4 w-4" /> {user ? "Dashboard" : "Home"}
           </Button>
           <span className="text-sm font-medium text-foreground">Resume Builder</span>
-          <Button size="sm" onClick={() => navigate("/preview")}>
-            <Eye className="mr-2 h-4 w-4" /> Preview
-          </Button>
+          <div className="flex gap-2">
+            {user && resumeId && (
+              <Button variant="outline" size="sm" onClick={saveResume} disabled={saving}>
+                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save
+              </Button>
+            )}
+            <Button size="sm" onClick={() => navigate(resumeId ? `/preview?id=${resumeId}` : "/preview")}>
+              <Eye className="mr-2 h-4 w-4" /> Preview
+            </Button>
+          </div>
         </div>
       </nav>
 
@@ -65,13 +114,19 @@ const ResumeBuilder = () => {
                 <div><Label>Phone</Label><Input value={resume.phone} onChange={(e) => updateField("phone", e.target.value)} placeholder="+1 555 000 0000" /></div>
                 <div><Label>Location</Label><Input value={resume.location} onChange={(e) => updateField("location", e.target.value)} placeholder="New York, NY" /></div>
                 <div><Label>LinkedIn</Label><Input value={resume.linkedin} onChange={(e) => updateField("linkedin", e.target.value)} placeholder="linkedin.com/in/johndoe" /></div>
+                <div className="sm:col-span-2"><Label>GitHub</Label><Input value={resume.github} onChange={(e) => updateField("github", e.target.value)} placeholder="github.com/johndoe" /></div>
               </div>
             </div>
           )}
 
           {step === 1 && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-foreground">Professional Summary</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-foreground">Professional Summary</h2>
+                <Button variant="outline" size="sm" onClick={() => aiGenerate("summary")} disabled={aiLoading}>
+                  {aiLoading ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 h-3 w-3" />} AI Generate
+                </Button>
+              </div>
               <Textarea value={resume.summary} onChange={(e) => updateField("summary", e.target.value)} placeholder="Write a brief professional summary..." rows={5} />
             </div>
           )}
@@ -104,7 +159,12 @@ const ResumeBuilder = () => {
 
           {step === 3 && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-foreground">Skills</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-foreground">Skills</h2>
+                <Button variant="outline" size="sm" onClick={() => aiGenerate("skills")} disabled={aiLoading}>
+                  {aiLoading ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 h-3 w-3" />} AI Suggest
+                </Button>
+              </div>
               <p className="text-sm text-muted-foreground">Enter skills separated by commas</p>
               <Input
                 value={resume.skills.join(", ")}
@@ -173,6 +233,32 @@ const ResumeBuilder = () => {
               ))}
             </div>
           )}
+
+          {step === 6 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-foreground">Certifications</h2>
+                <Button variant="outline" size="sm" onClick={() => updateField("certifications", [...resume.certifications, { name: "", issuer: "", year: "" }])}>
+                  <Plus className="mr-1 h-3 w-3" /> Add
+                </Button>
+              </div>
+              {resume.certifications.map((cert, i) => (
+                <div key={i} className="space-y-3 rounded-lg border border-border bg-secondary/30 p-4">
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium text-muted-foreground">Certification #{i + 1}</span>
+                    {resume.certifications.length > 1 && (
+                      <Button variant="ghost" size="sm" onClick={() => updateField("certifications", resume.certifications.filter((_, j) => j !== i))}>
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
+                  <Input value={cert.name} onChange={(e) => { const u = [...resume.certifications]; u[i] = { ...u[i], name: e.target.value }; updateField("certifications", u); }} placeholder="Certification name" />
+                  <Input value={cert.issuer} onChange={(e) => { const u = [...resume.certifications]; u[i] = { ...u[i], issuer: e.target.value }; updateField("certifications", u); }} placeholder="Issuing organization" />
+                  <Input value={cert.year} onChange={(e) => { const u = [...resume.certifications]; u[i] = { ...u[i], year: e.target.value }; updateField("certifications", u); }} placeholder="Year" />
+                </div>
+              ))}
+            </div>
+          )}
         </motion.div>
 
         {/* Navigation */}
@@ -185,7 +271,7 @@ const ResumeBuilder = () => {
               Next <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
-            <Button className="gradient-hero border-0 text-primary-foreground" onClick={() => navigate("/preview")}>
+            <Button className="gradient-hero border-0 text-primary-foreground" onClick={() => navigate(resumeId ? `/preview?id=${resumeId}` : "/preview")}>
               <Eye className="mr-2 h-4 w-4" /> Preview Resume
             </Button>
           )}

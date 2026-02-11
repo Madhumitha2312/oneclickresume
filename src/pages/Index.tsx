@@ -1,19 +1,24 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { FileText, Sparkles, Download, Globe, ArrowRight } from "lucide-react";
+import { FileText, Sparkles, Download, Globe, ArrowRight, Layout, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { sampleResume, useResume } from "@/context/ResumeContext";
+import { useAuth } from "@/context/AuthContext";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const features = [
   { icon: Sparkles, title: "AI-Powered", desc: "Smart suggestions to make your resume stand out" },
-  { icon: FileText, title: "Clean Templates", desc: "Professional layouts that recruiters love" },
+  { icon: FileText, title: "4 Templates", desc: "Classic, Modern, Minimal & Creative layouts" },
   { icon: Download, title: "PDF Export", desc: "Download your resume in perfect format" },
-  { icon: Globe, title: "Share Online", desc: "Get a personal link to your resume page" },
+  { icon: Globe, title: "Portfolio Page", desc: "Get a personal public portfolio link" },
+  { icon: Layout, title: "Dashboard", desc: "Manage all your resumes in one place" },
+  { icon: Shield, title: "Secure Auth", desc: "Your data is safe with user accounts" },
 ];
 
 const Index = () => {
   const navigate = useNavigate();
   const { setResume } = useResume();
+  const { user } = useAuth();
 
   const handleDemo = () => {
     setResume(sampleResume);
@@ -32,12 +37,13 @@ const Index = () => {
             <span className="text-lg font-semibold text-foreground">ResumeAI</span>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={handleDemo}>
-              Demo
-            </Button>
-            <Button size="sm" onClick={() => navigate("/builder")}>
-              Get Started
-            </Button>
+            <ThemeToggle />
+            <Button variant="ghost" size="sm" onClick={handleDemo}>Demo</Button>
+            {user ? (
+              <Button size="sm" onClick={() => navigate("/dashboard")}>Dashboard</Button>
+            ) : (
+              <Button size="sm" onClick={() => navigate("/auth")}>Sign In</Button>
+            )}
           </div>
         </div>
       </nav>
@@ -46,11 +52,7 @@ const Index = () => {
       <section className="relative overflow-hidden pt-32 pb-20">
         <div className="absolute inset-0 gradient-subtle" />
         <div className="container relative mx-auto px-4 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <span className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-1.5 text-sm text-muted-foreground shadow-card">
               <Sparkles className="h-3.5 w-3.5 text-accent" />
               AI-Powered Resume Builder
@@ -78,8 +80,8 @@ const Index = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
-            <Button size="lg" className="gradient-hero border-0 px-8 text-primary-foreground shadow-glow" onClick={() => navigate("/builder")}>
-              Create Resume
+            <Button size="lg" className="gradient-hero border-0 px-8 text-primary-foreground shadow-glow" onClick={() => navigate(user ? "/dashboard" : "/auth")}>
+              {user ? "Go to Dashboard" : "Get Started"}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
             <Button size="lg" variant="outline" onClick={handleDemo}>
@@ -92,7 +94,7 @@ const Index = () => {
       {/* Features */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {features.map((f, i) => (
               <motion.div
                 key={f.title}
