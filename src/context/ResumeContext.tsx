@@ -7,11 +7,13 @@ export interface ResumeData {
   phone: string;
   location: string;
   linkedin: string;
+  github: string;
   summary: string;
   education: { institution: string; degree: string; year: string }[];
   skills: string[];
   projects: { name: string; description: string; tech: string }[];
   experience: { company: string; role: string; duration: string; description: string }[];
+  certifications: { name: string; issuer: string; year: string }[];
 }
 
 const defaultResume: ResumeData = {
@@ -21,11 +23,13 @@ const defaultResume: ResumeData = {
   phone: "",
   location: "",
   linkedin: "",
+  github: "",
   summary: "",
   education: [{ institution: "", degree: "", year: "" }],
   skills: [],
   projects: [{ name: "", description: "", tech: "" }],
   experience: [{ company: "", role: "", duration: "", description: "" }],
+  certifications: [{ name: "", issuer: "", year: "" }],
 };
 
 export const sampleResume: ResumeData = {
@@ -35,6 +39,7 @@ export const sampleResume: ResumeData = {
   phone: "+1 (555) 234-5678",
   location: "San Francisco, CA",
   linkedin: "linkedin.com/in/alexmorgan",
+  github: "github.com/alexmorgan",
   summary: "Passionate full-stack engineer with 5+ years of experience building scalable web applications. Skilled in React, Node.js, and cloud infrastructure with a focus on clean architecture and user experience.",
   education: [
     { institution: "Stanford University", degree: "B.S. Computer Science", year: "2019" },
@@ -48,6 +53,10 @@ export const sampleResume: ResumeData = {
   experience: [
     { company: "Stripe", role: "Senior Software Engineer", duration: "2022 – Present", description: "Led the development of payment processing features serving millions of transactions. Improved API response time by 40%." },
     { company: "Figma", role: "Software Engineer", duration: "2019 – 2022", description: "Built collaborative design tools and real-time multiplayer features. Contributed to the plugin ecosystem used by 100K+ designers." },
+  ],
+  certifications: [
+    { name: "AWS Solutions Architect", issuer: "Amazon Web Services", year: "2023" },
+    { name: "Google Cloud Professional", issuer: "Google", year: "2022" },
   ],
 };
 
