@@ -22,6 +22,11 @@
   </head>
 
   <body>
-    <div id="root"></div>
+  <script>
+  if (window.location.hash === "#/auth") {
+    window.location.hash = "#/";
+  }
+  </script>
+  <div id="root"></div>
   </body>
 </html>
