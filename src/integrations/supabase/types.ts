@@ -79,7 +79,39 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_resumes: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          resume_data: Json | null
+          slug: string | null
+          template: string | null
+          title: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          resume_data?: never
+          slug?: string | null
+          template?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          resume_data?: never
+          slug?: string | null
+          template?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
